@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio AI — מערכת גרפיקה חכמה</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43e97b;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ── Layout ── */
+  .shell {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 28px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent2); }
+
+  .nav-section label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    transition: all 0.2s;
+    margin-bottom: 4px;
+  }
+  .nav-item:hover { background: var(--card); color: var(--text); }
+  .nav-item.active { background: rgba(108,99,255,0.15); color: var(--accent); }
+  .nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+
+  /* API Key section */
+  .api-section {
+    margin-top: auto;
+    padding: 16px;
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .api-section label {
+    font-size: 11px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .api-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    direction: ltr;
+    margin-bottom: 8px;
+  }
+  .api-input:focus { outline: none; border-color: var(--accent); }
+  .save-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Heebo', sans-serif;
+    transition: opacity 0.2s;
+  }
+  .save-btn:hover { opacity: 0.85; }
+
+  /* ── Main ── */
+  .main {
+    padding: 40px;
+    overflow-y: auto;
+  }
+
+  /* ── Pages ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Page Header ── */
+  .page-header { margin-bottom: 36px; }
+  .page-header h1 { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+  .page-header p { font-size: 14px; color: var(--muted); }
+
+  /* ── Brief Form ── */
+  .brief-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .brief-grid.full { grid-template-columns: 1fr; }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .form-group .hint { font-size: 11px; color: var(--muted); margin-top: -4px; }
+
+  .form-input, .form-select, .form-textarea {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Heebo', sans-serif;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+  }
+  .form-textarea { resize: vertical; min-height: 90px; }
+  .form-select { cursor: pointer; }
+  .form-select option { background: var(--card); }
+
+  /* Tag chips for style selection */
+  .tag-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--muted);
+    background: var(--card);
+  }
+  .tag:hover { border-color: var(--accent); color: var(--accent); }
+  .tag.selected { background: rgba(108,99,255,0.18); border-color: var(--accent); color: var(--accent); }
+
+  /* Color palette selector */
+  .palette-group { display: flex; flex-wrap: wrap; gap: 10px; }
+  .palette {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--muted);
+    background: var(--card);
+  }
+  .palette:hover, .palette.selected { border-color: var(--accent); color: var(--text); }
+  .palette .swatches { display: flex; gap: 3px; }
+  .swatch { width: 14px; height: 14px; border-radius: 50%; }
+
+  /* Section divider */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 32px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Generate button */
+  .generate-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Heebo', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 8px;
+  }
+  .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(108,99,255,0.4); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── Brief Output Box ── */
+  .brief-output-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    direction: rtl;
+    text-align: right;
+    max-height: 380px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    font-family: 'Heebo', sans-serif;
+  }
+
+  /* ── Brief Preview Card ── */
+  .brief-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .brief-card h3 { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 14px; }
+
+  .brief-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .brief-row .key { color: var(--muted); width: 120px; flex-shrink: 0; font-weight: 600; }
+  .brief-row .val { color: var(--text); }
+
+  /* ── Prompt Display ── */
+  .prompt-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent3);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    direction: ltr;
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+  }
+
+  /* ── Image Result ── */
+  .image-result {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .image-result img {
+    width: 100%;
+    display: block;
+  }
+  .image-actions {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+  }
+  .action-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .action-btn:hover { background: var(--card); border-color: var(--accent); color: var(--accent); }
+  .action-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .action-btn.primary:hover { opacity: 0.85; color: white; }
+
+  /* ── Gallery ── */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  .gallery-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .gallery-item:hover { border-color: var(--accent); transform: translateY(-3px); }
+  .gallery-item img { width: 100%; display: block; aspect-ratio: 1; object-fit: cover; }
+  .gallery-item .gi-meta {
+    padding: 12px;
+    font-size: 12px;
+  }
+  .gallery-item .gi-name { font-weight: 700; margin-bottom: 4px; }
+  .gallery-item .gi-date { color: var(--muted); }
+
+  /* ── Loading ── */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,15,0.85);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  .loading-overlay.visible { display: flex; }
+  .spinner {
+    width: 52px;
+    height: 52px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 16px; font-weight: 600; color: var(--text); }
+  .loading-sub { font-size: 13px; color: var(--muted); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 200;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent3); color: var(--accent3); }
+  .toast.error { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .es-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h3 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; }
+
+  /* Format badge */
+  .format-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(108,99,255,0.12);
+    color: var(--accent);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent3);
+    display: inline-block;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* Step indicator */
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 32px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .step.active { color: var(--accent); }
+  .step.done { color: var(--accent3); }
+  .step-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .step-done-icon { font-size: 14px; }
+  .step-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    margin: 0 10px;
+    max-width: 40px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">Studio<span>.AI</span></div>
+
+    <div class="nav-section">
+      <label>תהליך</label>
+      <div class="nav-item active" onclick="showPage('brief')">
+        <span class="icon">✏️</span> אפיון בריף
+      </div>
+      <div class="nav-item" onclick="showPage('generate')">
+        <span class="icon">⚡</span> יצירת גרפיקה
+      </div>
+      <div class="nav-item" onclick="showPage('gallery')">
+        <span class="icon">🖼️</span> גלריה
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <label>הדרכה</label>
+      <div class="nav-item" onclick="showPage('guide')">
+        <span class="icon">📖</span> מדריך שימוש
+      </div>
+    </div>
+
+    <div class="api-section">
+      <label>🔑 OpenAI API KEY</label>
+      <input class="api-input" type="password" id="apiKeyInput" placeholder="sk-..." />
+      <button class="save-btn" onclick="saveKey()">שמור מפתח</button>
+      <div id="keyStatus" style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center;"></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ══ PAGE: BRIEF ══ -->
+    <div class="page active" id="page-brief">
+      <div class="page-header">
+        <h1>✏️ אפיון בריף</h1>
+        <p>מלא את הפרטים — Claude יהפוך אותם לפרומפט מקצועי ל-DALL·E 3</p>
+      </div>
+
+      <!-- Client + Format -->
+      <div class="section-title">פרטי הקמפיין</div>
+      <div class="brief-grid">
+        <div class="form-group">
+          <label>שם לקוח / מותג</label>
+          <input class="form-input" id="b_brand" placeholder="לדוגמה: קפה נמרוד" />
+        </div>
+        <div class="form-group">
+          <label>תעשייה / קטגוריה</label>
+          <input class="form-input" id="b_industry" placeholder="לדוגמה: מסעדנות, אופנה, טכנולוגיה" />
+        </div>
+      </div>
+
+      <div class="brief-grid">
+        <div class="form-group">
+          <label>פורמט הגרפיקה</label>
+          <select class="form-select" id="b_format" onchange="updateFormatHint()">
+            <option value="">בחר פורמט...</option>
+            <option value="square_1080">ריבוע סושיאל — 1080×1080</option>
+            <option value="story_1080">סטורי / Reels — 1080×1920</option>
+            <option value="landscape_1200">בנר לנדינג — 1200×628</option>
+            <option value="banner_display">מודעת Display — 1200×628</option>
+            <option value="wide_1600">תמונה לאתר — 1600×900</option>
+          </select>
+          <div class="hint" id="formatHint"></div>
+        </div>
+        <div class="form-group">
+          <label>מטרת הגרפיקה</label>
+          <select class="form-select" id="b_goal">
+            <option value="">בחר מטרה...</option>
+            <option value="awareness">מודעות למותג</option>
+            <option value="sale">קידום מכירה / הנחה</option>
+            <option value="launch">השקת מוצר / שירות</option>
+            <option value="event">אירוע / הזמנה</option>
+            <option value="engagement">תוכן ויראלי / engagement</option>
+            <option value="testimonial">המלצה / סוציאל פרוף</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Product / Message -->
+      <div class="section-title">תוכן ומסרים</div>
+      <div class="brief-grid full">
+        <div class="form-group">
+          <label>מה הגרפיקה מציגה? (מוצר / שירות / רעיון)</label>
+          <input class="form-input" id="b_subject" placeholder="לדוגמה: כוס קפה מעשנת על שיש, לוגו בצד ימין" />
+        </div>
+      </div>
+      <div class="brief-grid full">
+        <div class="form-group">
+          <label>המסר / כותרת ראשית</label>
+          <input class="form-input" id="b_headline" placeholder="לדוגמה: 'הקפה הכי טוב בעיר — 20% הנחה'" />
+        </div>
+      </div>
+      <div class="brief-grid full">
+        <div class="form-group">
+          <label>פרטים נוספים / הוראות מיוחדות</label>
+          <textarea class="form-textarea" id="b_notes" placeholder="לדוגמה: לא לכלול טקסט בתמונה, הלוגו כחול, אווירה חגיגית"></textarea>
+        </div>
+      </div>
+
+      <!-- Style -->
+      <div class="section-title">סגנון ואווירה</div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>סגנון חזותי</label>
+        <div class="tag-group" id="styleGroup">
+          <div class="tag" onclick="toggleTag(this,'style')">מינימליסטי</div>
+          <div class="tag" onclick="toggleTag(this,'style')">מודרני / קלין</div>
+          <div class="tag" onclick="toggleTag(this,'style')">יוקרתי / פרמיום</div>
+          <div class="tag" onclick="toggleTag(this,'style')">עממי / חם</div>
+          <div class="tag" onclick="toggleTag(this,'style')">Lifestyle / צילומי</div>
+          <div class="tag" onclick="toggleTag(this,'style')">אמנותי / יצירתי</div>
+          <div class="tag" onclick="toggleTag(this,'style')">טכנולוגי / עתידני</div>
+          <div class="tag" onclick="toggleTag(this,'style')">וינטאג׳ / רטרו</div>
+          <div class="tag" onclick="toggleTag(this,'style')">פלאי / ילדותי</div>
+          <div class="tag" onclick="toggleTag(this,'style')">אורגני / טבעי</div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:20px">
+        <label>פלטת צבעים מועדפת</label>
+        <div class="palette-group" id="paletteGroup">
+          <div class="palette" onclick="toggleTag(this,'palette')">
+            <div class="swatches"><div class="swatch" style="background:#2c3e50"></div><div class="swatch" style="background:#e74c3c"></div><div class="swatch" style="background:#ecf0f1"></div></div> כהה ועוצמתי
+          </div>
+          <div class="palette" onclick="toggleTag(this,'palette')">
+            <div class="swatches"><div class="swatch" style="background:#f8f9fa"></div><div class="swatch" style="background:#dee2e6"></div><div class="swatch" style="background:#343a40"></div></div> לבן נקי
+          </div>
+          <div class="palette" onclick="toggleTag(this,'palette')">
+            <div class="swatches"><div class="swatch" style="background:#d4a017"></div><div class="swatch" style="background:#1a1a1a"></div><div class="swatch" style="background:#f5f0e8"></div></div> זהב ושחור
+          </div>
+          <div class="palette" onclick="toggleTag(this,'palette')">
+            <div class="swatches"><div class="swatch" style="background:#6c63ff"></div><div class="swatch" style="background:#43e97b"></div><div class="swatch" style="background:#ffffff"></div></div> ויברנט
+          </div>
+          <div class="palette" onclick="toggleTag(this,'palette')">
+            <div class="swatches"><div class="swatch" style="background:#f9ca24"></div><div class="swatch" style="background:#f0932b"></div><div class="swatch" style="background:#ffffff"></div></div> חם ואנרגטי
+          </div>
+          <div class="palette" onclick="toggleTag(this,'palette')">
+            <div class="swatches"><div class="swatch" style="background:#a8e6cf"></div><div class="swatch" style="background:#88d8b0"></div><div class="swatch" style="background:#ffffff"></div></div> ירוק / טבע
+          </div>
+          <div class="palette" onclick="toggleTag(this,'palette')">
+            <div class="swatches"><div class="swatch" style="background:#ff9ff3"></div><div class="swatch" style="background:#ffeaa7"></div><div class="swatch" style="background:#ffffff"></div></div> פסטל רך
+          </div>
+        </div>
+      </div>
+
+      <div class="brief-grid">
+        <div class="form-group">
+          <label>מצב תאורה / אווירה</label>
+          <select class="form-select" id="b_lighting">
+            <option value="">לא מוגדר</option>
+            <option value="natural">תאורה טבעית / יום</option>
+            <option value="golden">שעת הזהב / שקיעה</option>
+            <option value="dramatic">דרמטי / ניגוד גבוה</option>
+            <option value="studio">סטודיו / רקע נקי</option>
+            <option value="moody">עמום / מיסטי</option>
+            <option value="neon">ניאון / לילה עירוני</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>שפה ייחודית של המותג</label>
+          <input class="form-input" id="b_brandVoice" placeholder="לדוגמה: צבעי המותג: כחול #003399" />
+        </div>
+      </div>
+
+      <button class="generate-btn" onclick="buildBrief()">
+        ✨ המשך ליצירת גרפיקה →
+      </button>
+    </div>
+
+    <!-- ══ PAGE: GENERATE ══ -->
+    <div class="page" id="page-generate">
+      <div class="page-header">
+        <h1>⚡ יצירת גרפיקה</h1>
+        <p>Claude בנה פרומפט מקצועי — עכשיו נשלח ל-DALL·E 3</p>
+      </div>
+
+      <div class="steps">
+        <div class="step done"><span class="step-done-icon">✅</span> אפיון</div>
+        <div class="step-line"></div>
+        <div class="step active"><div class="step-num">2</div> בניית פרומפט</div>
+        <div class="step-line"></div>
+        <div class="step"><div class="step-num">3</div> יצירה</div>
+      </div>
+
+      <div class="brief-card" id="briefSummary">
+        <h3>📋 סיכום הבריף</h3>
+        <div id="briefRows"></div>
+      </div>
+
+      <div id="briefOutputSection" style="display:none">
+        <div class="section-title">📋 בריף עיצובי — פלט Claude</div>
+        <div id="briefOutputBox" class="brief-output-box"></div>
+      </div>
+
+      <div class="section-title">פרומפט DALL·E 3</div>
+      <div id="promptBox" class="prompt-box">הפרומפט יופיע כאן אחרי עיבוד הבריף...</div>
+
+      <div style="display:flex;gap:12px;margin-bottom:24px;">
+        <button class="action-btn" onclick="regeneratePrompt()" style="flex:0 0 auto;padding:10px 18px;">
+          🔄 בנה פרומפט מחדש
+        </button>
+        <button class="action-btn primary" style="flex:1" onclick="generateImage()">
+          🎨 צור גרפיקה עם DALL·E 3
+        </button>
+      </div>
+
+      <div id="imageResultArea" style="display:none">
+        <div class="section-title">גרפיקה שנוצרה</div>
+        <div class="image-result">
+          <img id="resultImage" src="" alt="גרפיקה שנוצרה" />
+          <div class="image-actions">
+            <a id="downloadBtn" class="action-btn" download="graphic.png">⬇️ הורד</a>
+            <button class="action-btn" onclick="generateImage()">🔄 נסה שוב</button>
+            <button class="action-btn primary" onclick="saveToGallery()">💾 שמור לגלריה</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="action-btn" onclick="showPage('brief')" style="margin-top:8px">← חזור לאפיון</button>
+    </div>
+
+    <!-- ══ PAGE: GALLERY ══ -->
+    <div class="page" id="page-gallery">
+      <div class="page-header">
+        <h1>🖼️ גלריה</h1>
+        <p>כל הגרפיקות שנוצרו בסשן הנוכחי</p>
+      </div>
+      <div id="galleryGrid" class="gallery-grid"></div>
+      <div id="galleryEmpty" class="empty-state">
+        <div class="es-icon">🖼️</div>
+        <h3>הגלריה ריקה</h3>
+        <p>צור גרפיקות ושמור אותן כדי שיופיעו כאן</p>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: GUIDE ══ -->
+    <div class="page" id="page-guide">
+      <div class="page-header">
+        <h1>📖 מדריך שימוש</h1>
+        <p>כל מה שצריך לדעת כדי להפיק גרפיקות מקצועיות</p>
+      </div>
+
+      <div class="brief-card">
+        <h3>🔑 שלב 0 — הגדרת API Key</h3>
+        <p style="font-size:14px;line-height:1.8;color:var(--text);">
+          1. היכנס ל-<strong>platform.openai.com</strong><br>
+          2. לחץ על "API Keys" ← "Create new secret key"<br>
+          3. הדבק את המפתח בתיבה בסרגל השמאלי ולחץ "שמור"<br>
+          <span style="color:var(--muted);">המפתח נשמר רק בדפדפן שלך ולא נשלח לשום שרת חיצוני.</span>
+        </p>
+      </div>
+
+      <div class="brief-card">
+        <h3>✏️ שלב 1 — אפיון הבריף</h3>
+        <p style="font-size:14px;line-height:1.8;color:var(--text);">
+          מלא את כל השדות בדף האפיון. ככל שתהיה ספציפי יותר — כך התוצאה תהיה טובה יותר:<br>
+          • <strong>שם מותג + תעשייה</strong> — נותן context לAI<br>
+          • <strong>פורמט</strong> — משפיע ישירות על הגדלים ב-DALL·E<br>
+          • <strong>נושא ומסר</strong> — מה נראה בגרפיקה<br>
+          • <strong>סגנון + צבעים</strong> — מכוון את האסתטיקה
+        </p>
+      </div>
+
+      <div class="brief-card">
+        <h3>⚡ שלב 2 — עיבוד ויצירה</h3>
+        <p style="font-size:14px;line-height:1.8;color:var(--text);">
+          Claude מעבד את הבריף → בונה פרומפט מקצועי בשפת DALL·E → שולח ל-API.<br>
+          תוצאה בדרך כלל תוך 15-30 שניות. אפשר ללחוץ "בנה פרומפט מחדש" לגרסה שונה.
+        </p>
+      </div>
+
+      <div class="brief-card">
+        <h3>💡 טיפים להצלחה</h3>
+        <p style="font-size:14px;line-height:1.8;color:var(--text);">
+          • <strong>טקסט בגרפיקה:</strong> DALL·E לא מוצלח בטקסט — הוסף אותו ב-Canva/Figma אחר כך<br>
+          • <strong>לוגו:</strong> ציין בהוראות "ללא לוגו" ותוסיף אותו ידנית<br>
+          • <strong>גרסאות:</strong> לחץ "נסה שוב" 2-3 פעמים לגרסאות שונות ובחר הטובה<br>
+          • <strong>שמור לגלריה:</strong> שמור את כל הגרסאות הטובות לפני שסוגר
+        </p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">מעבד...</div>
+  <div class="loading-sub" id="loadingSub">אנא המתן</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ───────────────────────────────────────────
+let currentBrief = {};
+let currentPrompt = '';
+let currentFullBrief = '';
+let currentImageUrl = '';
+let gallery = [];
+
+// ─── Navigation ──────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.trim().includes(name === 'brief' ? 'אפיון' : name === 'generate' ? 'יצירת' : name === 'gallery' ? 'גלריה' : 'מדריך')) {
+      n.classList.add('active');
+    }
+  });
+  if (name === 'gallery') renderGallery();
+}
+
+// ─── Tag toggles ─────────────────────────────────────
+function toggleTag(el, group) {
+  const inGroup = group === 'style' ? document.querySelectorAll('#styleGroup .tag') : document.querySelectorAll('#paletteGroup .palette');
+  if (group === 'style') {
+    el.classList.toggle('selected');
+  } else {
+    // single select for palette
+    inGroup.forEach(t => t.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+}
+
+function getSelectedTags(selector) {
+  return [...document.querySelectorAll(selector + '.selected')].map(t => t.textContent.trim()).join(', ');
+}
+
+// ─── API Key ─────────────────────────────────────────
+function saveKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-')) { showToast('מפתח לא תקין — חייב להתחיל ב-sk-', 'error'); return; }
+  localStorage.setItem('openai_key', key);
+  document.getElementById('keyStatus').innerHTML = '<span class="status-dot"></span> מפתח שמור ✓';
+  showToast('מפתח נשמר!', 'success');
+}
+
+function getKey() { return localStorage.getItem('openai_key') || document.getElementById('apiKeyInput').value.trim(); }
+function getAnthropicKey() { return localStorage.getItem('anthropic_key') || ''; }
+
+// Load key on start
+window.addEventListener('load', () => {
+  const k = localStorage.getItem('openai_key');
+  if (k) {
+    document.getElementById('apiKeyInput').value = k;
+    document.getElementById('keyStatus').innerHTML = '<span class="status-dot"></span> מפתח שמור ✓';
+  }
+});
+
+// ─── Format Hint ─────────────────────────────────────
+const formatMap = {
+  'square_1080': { label: 'ריבוע 1:1', dalle: '1024x1024' },
+  'story_1080':  { label: 'סטורי 9:16', dalle: '1024x1792' },
+  'landscape_1200': { label: 'לנדסקייפ 16:9', dalle: '1792x1024' },
+  'banner_display': { label: 'בנר Display 16:9', dalle: '1792x1024' },
+  'wide_1600': { label: 'רחב 16:9', dalle: '1792x1024' },
+};
+function updateFormatHint() {
+  const v = document.getElementById('b_format').value;
+  const hint = document.getElementById('formatHint');
+  hint.textContent = v && formatMap[v] ? `DALL·E יצור ב-${formatMap[v].dalle}` : '';
+}
+
+// ─── Build Brief ─────────────────────────────────────
+function buildBrief() {
+  const required = ['b_brand','b_format','b_subject'];
+  for (const id of required) {
+    if (!document.getElementById(id).value.trim()) {
+      showToast('נא למלא: שם מותג, פורמט ונושא', 'error');
+      document.getElementById(id).focus();
+      return;
+    }
+  }
+
+  currentBrief = {
+    brand: document.getElementById('b_brand').value.trim(),
+    industry: document.getElementById('b_industry').value.trim(),
+    format: document.getElementById('b_format').value,
+    formatLabel: document.getElementById('b_format').selectedOptions[0]?.text || '',
+    goal: document.getElementById('b_goal').selectedOptions[0]?.text || '',
+    subject: document.getElementById('b_subject').value.trim(),
+    headline: document.getElementById('b_headline').value.trim(),
+    notes: document.getElementById('b_notes').value.trim(),
+    style: getSelectedTags('#styleGroup .tag'),
+    palette: getSelectedTags('#paletteGroup .palette'),
+    lighting: document.getElementById('b_lighting').selectedOptions[0]?.text || '',
+    brandVoice: document.getElementById('b_brandVoice').value.trim(),
+  };
+
+  // Show brief summary
+  const rows = document.getElementById('briefRows');
+  rows.innerHTML = '';
+  const fields = [
+    ['מותג', currentBrief.brand],
+    ['תעשייה', currentBrief.industry],
+    ['פורמט', currentBrief.formatLabel],
+    ['מטרה', currentBrief.goal],
+    ['נושא', currentBrief.subject],
+    ['כותרת', currentBrief.headline],
+    ['סגנון', currentBrief.style],
+    ['פלטה', currentBrief.palette],
+    ['תאורה', currentBrief.lighting],
+    ['הערות', currentBrief.notes],
+  ];
+  fields.forEach(([k, v]) => {
+    if (!v) return;
+    rows.innerHTML += `<div class="brief-row"><span class="key">${k}</span><span class="val">${v}</span></div>`;
+  });
+
+  showPage('generate');
+  generatePromptWithClaude();
+}
+
+// ─── Generate Prompt via Claude ───────────────────────
+const SYSTEM_PROMPT = `אתה עוזר אישי למנהלי קמפיינים. התפקיד שלך הוא לקבל נתונים גולמיים על קמפיין ולהפוך אותם לבריף עיצובי מקצועי, ברור וטכני עבור גרפיקאי/ת.
+
+הנחיות עבודה:
+- קליטת נתונים: המשתמש יספק לך את כל הפרטים (מוצר, קהל, צבעים, מסרים, קריאייטיב).
+- עיבוד: עליך לארגן את המידע בצורה היררכית שנוחה לקריאה מהירה של מעצב.
+- פורמטים: הבריף יכלול תמיד דגשים ל-2 פורמטים:
+  • Square (1:1): למיקומים ב-Feed.
+  • Story (9:16): למיקומים ב-Stories/Reels (עם דגש על השארת שוליים פנויים למעלה ולמטה).
+- טון וסגנון: ענייני, מקצועי, וביצועי.
+
+מבנה הפלט (הבריף הסופי):
+
+📋 בריף לעיצוב גרפי: [שם המותג/הקמפיין]
+
+מטרת הקמפיין: מה אנחנו רוצים להשיג.
+קהל יעד: למי המודעה פונה (משפיע על בחירת הפונטים והתמונות).
+הקונספט הויזואלי: תיאור הקריאייטיב שסופק על ידי המשתמש בצורה גרפית.
+צבעוניות ושפה מותגית: הגדרת צבעים וסגנון (בהתאם למה שסופק).
+
+✍️ טקסטים על גבי המודעה:
+Main Hook: (כותרת בולטת).
+Sub-headline: (פירוט קצר במידת הצורך).
+CTA (הנעה לפעולה): מה כתוב על הכפתור/במודעה.
+
+📏 דרישות טכניות ופורמטים:
+ריבוע (1080×1080): דגש על מרכזיות המסר.
+סטורי (1080×1920): הקפדה על Safe Zones (מרחק של 250px מהקצה העליון והתחתון).
+
+לאחר הבריף, הוסף בלוק נפרד:
+
+🎨 DALL-E 3 PROMPT:
+[כתוב פרומפט באנגלית, מקצועי ומפורט, המתאר את הויזואל בלבד — ללא טקסט, ללא לוגו. כלול: קומפוזיציה, תאורה, צבעים, סגנון, אווירה. מותאם לפורמט ריבוע כברירת מחדל.]`;
+
+async function generatePromptWithClaude() {
+  showLoading('בונה בריף עיצובי...', 'מעבד את הנתונים');
+  const b = currentBrief;
+
+  try {
+    // Build structured brief locally (no API needed)
+    const briefText = `📋 בריף לעיצוב גרפי: ${b.brand}
+
+מטרת הקמפיין: ${b.goal || 'לא צוין'}
+קהל יעד: ${b.industry || 'לא צוין'}
+הקונספט הויזואלי: ${b.subject}
+צבעוניות ושפה מותגית: ${[b.palette, b.brandVoice].filter(Boolean).join(' | ') || 'לא צוין'}
+
+✍️ טקסטים על גבי המודעה:
+Main Hook: ${b.headline || 'לא צוין'}
+Sub-headline: ${b.notes || '—'}
+CTA: ${b.goal || '—'}
+
+📏 דרישות טכניות ופורמטים:
+ריבוע (1080×1080): דגש על מרכזיות המסר.
+סטורי (1080×1920): הקפדה על Safe Zones — מרחק 250px מהקצה העליון והתחתון.`;
+
+    // Build DALL-E prompt from brief fields
+    const styleStr = b.style || 'professional, modern';
+    const paletteStr = b.palette || '';
+    const lightingStr = b.lighting || 'natural lighting';
+    const industryStr = b.industry || '';
+
+    currentPrompt = `Professional marketing visual for ${b.brand}${industryStr ? ', ' + industryStr : ''}. Scene: ${b.subject}. ${styleStr} visual style. ${paletteStr ? 'Color palette: ' + paletteStr + '.' : ''} ${lightingStr}. High-end commercial photography, perfect composition, sharp details, cinematic quality. No text, no logos, no watermarks. Optimized for square social media format.`;
+
+    currentFullBrief = briefText;
+    document.getElementById('briefOutputBox').textContent = briefText;
+    document.getElementById('briefOutputSection').style.display = 'block';
+    document.getElementById('promptBox').textContent = currentPrompt;
+  } catch (err) {
+    showToast('שגיאה בבניית הבריף', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function buildFallbackPrompt() {
+  const b = currentBrief;
+  return `Professional marketing photo for ${b.brand}, ${b.industry} industry. ${b.subject}. ${b.style} visual style. Color palette: ${b.palette}. ${b.lighting} lighting. High-quality commercial photography, clean composition, suitable for ${b.formatLabel} social media format. No text, no logos.`;
+}
+
+async function regeneratePrompt() {
+  if (!currentBrief.brand) { showToast('חזור לאפיון והזן בריף תחילה', 'error'); return; }
+  await generatePromptWithClaude();
+}
+
+// ─── Generate Image via DALL·E 3 ─────────────────────
+async function generateImage() {
+  const key = getKey();
+  if (!key) { showToast('נא להזין OpenAI API Key בסרגל', 'error'); return; }
+  if (!currentPrompt) { showToast('נא לבנות פרומפט תחילה', 'error'); return; }
+
+  const format = currentBrief.format;
+  const size = (format && formatMap[format]) ? formatMap[format].dalle : '1024x1024';
+
+  showLoading('DALL·E 3 יוצר את הגרפיקה...', 'זה לוקח כ-20-40 שניות');
+
+  try {
+    const key = getKey();
+    console.log('Key starts with:', key.substring(0, 10));
+    console.log('Prompt:', currentPrompt.substring(0, 100));
+    console.log('Size:', size);
+
+    const res = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: currentPrompt,
+        n: 1,
+        size: size,
+        quality: 'standard',
+        response_format: 'url'
+      })
+    });
+    const data = await res.json();
+    console.log('Response:', JSON.stringify(data));
+    if (data.error) throw new Error(data.error.message);
+
+    currentImageUrl = data.data[0].url;
+    document.getElementById('resultImage').src = currentImageUrl;
+    document.getElementById('downloadBtn').href = currentImageUrl;
+    document.getElementById('imageResultArea').style.display = 'block';
+    showToast('גרפיקה נוצרה בהצלחה! 🎉', 'success');
+
+    // Update steps
+    document.querySelectorAll('.step').forEach((s, i) => {
+      if (i === 2) { s.classList.add('done'); s.innerHTML = '<span class="step-done-icon">✅</span> יצירה'; }
+    });
+  } catch (err) {
+    showToast('שגיאה: ' + err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// ─── Gallery ─────────────────────────────────────────
+function saveToGallery() {
+  if (!currentImageUrl) return;
+  gallery.push({
+    url: currentImageUrl,
+    brand: currentBrief.brand,
+    format: currentBrief.formatLabel,
+    date: new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+    prompt: currentPrompt
+  });
+  showToast('נשמר לגלריה ✓', 'success');
+}
+
+function renderGallery() {
+  const grid = document.getElementById('galleryGrid');
+  const empty = document.getElementById('galleryEmpty');
+  grid.innerHTML = '';
+  if (gallery.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  gallery.forEach((item, i) => {
+    grid.innerHTML += `
+      <div class="gallery-item">
+        <img src="${item.url}" alt="גרפיקה ${i+1}" />
+        <div class="gi-meta">
+          <div class="gi-name">${item.brand}</div>
+          <div class="gi-date">${item.format} · ${item.date}</div>
+        </div>
+      </div>`;
+  });
+}
+
+// ─── UI Helpers ──────────────────────────────────────
+function showLoading(text, sub) {
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loadingSub').textContent = sub;
+  document.getElementById('loadingOverlay').classList.add('visible');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('visible');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
